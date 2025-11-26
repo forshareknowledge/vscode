@@ -475,7 +475,7 @@ export const terminalChatAgentToolsConfiguration: IStringDictionary<IConfigurati
 	},
 	// Experimental settings for object storage that control sandboxing with properties like allowed/denied system calls could go here in future.
 	[TerminalChatAgentToolsSettingId.TerminalSandbox]: {
-		markdownDescription: localize('terminalSandbox.description', "Controls whether to run commands in a sandboxed terminal for the run in terminal tool."),
+		markdownDescription: localize('terminalSandbox.description', "Controls whether to run commands in a sandboxed terminal. Support for sandboxed terminals is enabled for Linux and macOS."),
 		type: ['object', 'null'],
 		'anyOf': [
 			{ type: 'null' },

@@ -56,6 +56,7 @@ import { ChatConfiguration } from '../../../../chat/common/constants.js';
 import { IFileService } from '../../../../../../platform/files/common/files.js';
 import { URI } from '../../../../../../base/common/uri.js';
 import { VSBuffer } from '../../../../../../base/common/buffer.js';
+import { SandboxCommandLineRewriter } from './commandLineRewriter/sandboxCommandLineRewriter.js';
 
 // #region Tool data
 
@@ -265,6 +266,7 @@ export class RunInTerminalTool extends Disposable implements IToolImpl {
 	private readonly _telemetry: RunInTerminalToolTelemetry;
 	private readonly _commandArtifactCollector: TerminalCommandArtifactCollector;
 	protected readonly _profileFetcher: TerminalProfileFetcher;
+	private _isSandboxed: boolean;
 
 	private readonly _commandLineRewriters: ICommandLineRewriter[];
 	private readonly _commandLineAnalyzers: ICommandLineAnalyzer[];
@@ -306,10 +308,12 @@ export class RunInTerminalTool extends Disposable implements IToolImpl {
 		this._telemetry = this._instantiationService.createInstance(RunInTerminalToolTelemetry);
 		this._commandArtifactCollector = this._instantiationService.createInstance(TerminalCommandArtifactCollector);
 		this._profileFetcher = this._instantiationService.createInstance(TerminalProfileFetcher);
+		this._isSandboxed = this._isSandBoxedTerminal();
 
 		this._commandLineRewriters = [
 			this._register(this._instantiationService.createInstance(CommandLineCdPrefixRewriter)),
 			this._register(this._instantiationService.createInstance(CommandLinePwshChainOperatorRewriter, this._treeSitterCommandParser)),
+			this._register(this._instantiationService.createInstance(SandboxCommandLineRewriter)),
 		];
 		this._commandLineAnalyzers = [
 			this._register(this._instantiationService.createInstance(CommandLineFileWriteAnalyzer, this._treeSitterCommandParser, (message, args) => this._logService.info(`RunInTerminalTool#CommandLineFileWriteAnalyzer: ${message}`, args))),
@@ -330,6 +334,7 @@ export class RunInTerminalTool extends Disposable implements IToolImpl {
 					// create a config file inside .vscode folder.
 					this._createConfigFileForSandboxing();
 				}
+				this._isSandboxed = sandboxSetting?.enabled === true;
 			}
 		}));
 
@@ -384,7 +389,8 @@ export class RunInTerminalTool extends Disposable implements IToolImpl {
 				commandLine: rewrittenCommand,
 				cwd,
 				shell,
-				os
+				os,
+				sandboxed: this._isSandboxed
 			});
 			if (rewriteResult) {
 				rewrittenCommand = rewriteResult.rewritten;
@@ -780,17 +786,22 @@ export class RunInTerminalTool extends Disposable implements IToolImpl {
 	}
 
 	private _isSandBoxedTerminal(): boolean {
+		// if (isWindows) {
+		// 	return false;
+		// }
 		const settings = this._configurationService.getValue<ISandboxTerminalSettings>(TerminalChatAgentToolsSettingId.TerminalSandbox);
 		return settings?.enabled === true;
 	}
 
 	private _getFromCache(chatSessionId: string): IToolTerminal | undefined {
 
-		if (this._isSandBoxedTerminal()) {
-			return this._sessionTerminalAssociations.get(chatSessionId)?.filter(terminal => terminal.instance.shellLaunchConfig?.sandboxed === true)[0];
-		} else {
-			return this._sessionTerminalAssociations.get(chatSessionId)?.filter(terminal => terminal.instance.shellLaunchConfig?.sandboxed !== true)[0];
-		}
+		// if (this._isSandBoxedTerminal()) {
+		// 	return this._sessionTerminalAssociations.get(chatSessionId)?.filter(terminal => terminal.instance.shellLaunchConfig?.sandboxed === true)[0];
+		// } else {
+		// 	return this._sessionTerminalAssociations.get(chatSessionId)?.filter(terminal => terminal.instance.shellLaunchConfig?.sandboxed !== true)[0];
+		// }
+
+		return this._sessionTerminalAssociations.get(chatSessionId)?.[0];
 	}
 
 	private _addToCache(chatSessionId: string, toolTerminal: IToolTerminal): void {
